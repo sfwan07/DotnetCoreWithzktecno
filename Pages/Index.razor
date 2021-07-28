@@ -1,0 +1,82 @@
+﻿@page "/"
+@using System.Text;
+
+<h1>Hello, world!</h1>
+
+<p>IP Address</p>
+<input @bind="IPAddress" type="text" />
+
+<p>Port</p>
+<input type="number" @bind="Port" />
+
+<button type="button" @onclick="ClickCheck">Check</button>
+
+<p>
+    Support Device @IsSupport
+    @if (Info != null)
+    {
+        <span>@Info.ToString()</span>
+    }
+</p>
+
+@code{
+    zkemkeeper.CZKEMClass zKEMC;
+    public string IPAddress { get; set; }
+    public int Port { get; set; } = 4370;
+    public bool IsSupport { get; set; } = false;
+    public StringBuilder Info { get; set; } = new StringBuilder();
+
+    public void ClickCheck()
+    {
+
+        IsSupport = zKEMC.Connect_Net(IPAddress, Port);
+        zKEMC.GetSerialNumber(zKEMC.MachineNumber, out string InfoLoacl);
+        Info.AppendLine($"Serial Number: {InfoLoacl}");
+        Info.AppendLine($"Info: {InfoLoacl}");
+
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        zKEMC = new zkemkeeper.CZKEMClass();
+
+        zKEMC.OnConnected += () =>
+        {
+            Info.AppendLine("-----------------------------");
+            Info.AppendLine("Device Connected");
+            Info.AppendLine("-----------------------------");
+            StateHasChanged();
+        };
+
+        zKEMC.OnGeneralEvent += (datastr) =>
+        {
+            Info.AppendLine("-----------------------------");
+            Info.Append(datastr);
+            Info.AppendLine("-----------------------------");
+            StateHasChanged();
+        };
+
+        zKEMC.OnFinger += () =>
+        {
+
+            Info.AppendLine("-----------------------------");
+            Info.AppendLine("has Finger");
+            Info.AppendLine("-----------------------------");
+            StateHasChanged();
+        };
+
+        zKEMC.OnAttTransaction += (EnrollNumber, IsInValid, AttState, VerifyMethod, Year, Month, Day, Hour, Minute, Second) =>
+        {
+            Info.AppendLine("-----------------------------");
+            Info.Append($"EnrollNumber: {EnrollNumber}");
+            Info.Append($" IsInValid: {IsInValid}");
+            Info.Append($" AttState: {AttState}");
+            Info.Append($" VerifyMethod: {VerifyMethod}");
+            Info.Append($" Date: {Day}/{Month}/{Year} - Time:{Hour}:{Minute}:{Second}");
+            Info.AppendLine("-----------------------------");
+            StateHasChanged();
+        };
+    }
+
+}
